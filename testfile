@@ -1,0 +1,25 @@
+./pipex infile "cat" "wc -l" outfile
+cat infile | wc -l outfile
+
+./pipex infile "grep 1" "wc -w" outfile
+grep 1 infile  | wc -w 
+
+./pipex large.bin "cat" "md5sum" checksum.txt
+cat large.bin | md5sum > checksum.txt ; diff checksum.txt checksum1.txt
+
+./pipex nofile.txt "cat" "wc -l" out.txt
+cat nofile.txt | wc -l out.txt
+
+./pipex infile "grep a1" "wc -w" outfile
+< infile grep a1 | wc -w > outfile
+
+< file1 cmd1 | cmd2 > file2
+
+./pipex nofile.txt "cat" "wc -l" nofile.txt
+< nofile.txt "cat" | "wc -l" > nofile.txt
+
+./pipex "infile" "cat" "notexisting" "outfile"
+< infile cat | notexisting > outfile
+
+./pipex infile "grep a1" "/usr/bin/cat" outfile
+< infile grep a1 | /usr/bin/cat > outfile

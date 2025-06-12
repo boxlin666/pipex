@@ -1,5 +1,7 @@
 /obj/
 pipex
-/test/
+/test/*
 infile
 outfile
+checksum.txt
+checksum1.txt

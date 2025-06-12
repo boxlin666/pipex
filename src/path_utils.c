@@ -13,6 +13,13 @@ char *find_executable(char *cmd, char **envp)
     char **paths = NULL;
     char  *path_env = NULL;
     char  *fullpath = NULL;
+    if (ft_strchr(cmd, '/'))
+    {
+        if (access(cmd, X_OK) == 0)
+            return ft_strdup(cmd);
+        else
+            return NULL;  // 127: 找不到或无法执行
+    }
     for (int i = 0; envp[i]; i++)
         if (ft_strncmp(envp[i], "PATH=", 5) == 0)
         {

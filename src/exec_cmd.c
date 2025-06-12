@@ -1,5 +1,6 @@
 #include"pipex.h"
 #include"libft.h"
+#include <errno.h>
 
 void exec_cmd(char *cmd_str, char **envp)
 {
@@ -16,12 +17,19 @@ void exec_cmd(char *cmd_str, char **envp)
     if (!cmd_path)
     {
         free_args(argv);
-        ERROR_EXIT("command not found");
+        perror("command not found");
+        exit(127); 
     }
 
     execve(cmd_path, argv, envp);
-
-    ERROR_EXIT("execve");
+    
     free(cmd_path);
     free_args(argv);
+    perror("execve failed");
+    if (errno == ENOENT)
+        exit(127);         // 文件不存在或路径错误
+    else if (errno == EACCES)
+        exit(126);         // 找到文件但无执行权限
+    else
+        exit(126);         // 其他 execve 错误，也可设为 1 或 126
 }

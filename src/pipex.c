@@ -11,11 +11,10 @@ void run_pipex(char *infile, char *cmd1, char *cmd2, char *outfile, char **envp)
     int pipefd[2];
     char *error_message;
     pid_t pid1, pid2;
+    int status1, status2;
 
     // 1. 打开 infile 和 outfile
     infile_fd = open(infile, O_RDONLY);
-    if(infile_fd < 0)
-        close(pipefd[1]);
     outfile_fd = open(outfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (outfile_fd < 0)
         ERROR_EXIT("open outfile");
@@ -34,7 +33,7 @@ void run_pipex(char *infile, char *cmd1, char *cmd2, char *outfile, char **envp)
         {
             error_message = ft_strjoin(cmd1, ": ");
             error_message = ft_strjoin(error_message, infile);
-            perror(error_message);
+            ERROR_EXIT(error_message);
         }
         // 重定向 stdin/stdout
         dup2(infile_fd, STDIN_FILENO);
@@ -43,8 +42,7 @@ void run_pipex(char *infile, char *cmd1, char *cmd2, char *outfile, char **envp)
         close(outfile_fd);
         close(pipefd[0]);
         close(pipefd[1]);
-        if (infile_fd >= 0)
-            exec_cmd(cmd1, envp);
+        exec_cmd(cmd1, envp);
     }
 
     // 4. 第二个子进程：执行 cmd2，将 管道 -> cmd2 -> outfile
@@ -53,12 +51,24 @@ void run_pipex(char *infile, char *cmd1, char *cmd2, char *outfile, char **envp)
         ERROR_EXIT("fork");
     if (pid2 == 0)
     {
-        dup2(pipefd[0], STDIN_FILENO);
-        dup2(outfile_fd, STDOUT_FILENO);
-        close(infile_fd);
-        close(outfile_fd);
-        close(pipefd[0]);
-        close(pipefd[1]);
+        if (infile_fd < 0)
+        {
+            close(pipefd[1]);
+            dup2(pipefd[0], STDIN_FILENO);
+            dup2(outfile_fd, STDOUT_FILENO);
+            close(outfile_fd);
+            close(pipefd[0]);
+        }
+        else
+        {
+            dup2(pipefd[0], STDIN_FILENO);
+            dup2(outfile_fd, STDOUT_FILENO);
+            close(infile_fd);
+            close(outfile_fd);
+            close(pipefd[0]);
+            close(pipefd[1]);
+        }
+
         exec_cmd(cmd2, envp);
     }
 
@@ -67,6 +77,12 @@ void run_pipex(char *infile, char *cmd1, char *cmd2, char *outfile, char **envp)
     close(outfile_fd);
     close(pipefd[0]);
     close(pipefd[1]);
-    waitpid(pid1, NULL, 0);
-    waitpid(pid2, NULL, 0);
+    waitpid(pid1, &status1, 0);
+    waitpid(pid2, &status2, 0);
+    if (WIFEXITED(status2))
+    {
+        exit(WEXITSTATUS(status2));
+    }
+    // 所有命令成功，返回 0
+    exit(0);
 }
