@@ -23,3 +23,6 @@ cat nofile.txt | wc -l out.txt
 
 ./pipex infile "grep a1" "/usr/bin/cat" outfile
 < infile grep a1 | /usr/bin/cat > outfile
+
+./pipex infile "grep a1" "awk '{count++} END {print count}'" outfile
+< infile grep a1 | awk '{count++} END {print count}' > outfile
