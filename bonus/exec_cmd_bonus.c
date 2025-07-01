@@ -1,30 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main_bonus.c                                       :+:      :+:    :+:   */
+/*   exec_cmd.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: helin <helin@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/07/01 21:05:25 by helin             #+#    #+#             */
-/*   Updated: 2025/07/01 21:20:15 by helin            ###   ########.fr       */
+/*   Created: 2025/07/01 19:24:39 by helin             #+#    #+#             */
+/*   Updated: 2025/07/01 19:50:12 by helin            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "pipex_bonus.h"
 #include "libft.h"
+#include "pipex.h"
+#include <errno.h>
 
-int	main(int argc, char **argv, char **envp)
+void	exec_cmd(char *cmd_str, char **envp)
 {
-	t_pipex_bonus	px;
+	char	*argv[4];
 
-	if (argc < 5)
-		error_exit("Usage: ./pipex infile cmd1 cmd2 ... outfile\n\
-or: ./pipex here_doc LIMITER cmd1 cmd2 ... outfile");
-	if (ft_strncmp(argv[1], "here_doc", 9) == 0)
-		init_here_doc(&px, argc, argv, envp);
+	argv[0] = "sh";
+	argv[1] = "-c";
+	argv[2] = cmd_str;
+	argv[3] = NULL;
+	execve("/bin/sh", argv, envp);
+	perror("execve failed");
+	if (errno == ENOENT)
+		exit(127);
+	else if (errno == EACCES)
+		exit(126);
 	else
-		init_pipex(&px, argc, argv, envp);
-	run_pipex_bonus(&px);
-	free_pipex_bonus(&px);
-	return (0);
+		exit(1);
 }

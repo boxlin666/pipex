@@ -27,14 +27,18 @@ typedef struct s_pipex_bonus
     pid_t   *pids;          // 存放 fork 出来的子进程 pid，长度 cmd_count
 
     char    **envp;         // 环境变量，传给 execve 使用
-
+    int		here_doc_pipe[2];
 }   t_pipex_bonus;
 
 void    error_exit(const char *msg);
 
 // 执行流程
+void	init_here_doc(t_pipex_bonus *px, int argc, char **argv, char **envp);
+void	init_pipex(t_pipex_bonus *px, int argc, char **argv, char **envp);
 void    exec_cmd(char *cmd_str, char **envp);
-void    run_pipex(t_pipex_bonus *context, char **envp);
+void    error_exit(const char *msg);
+void	run_pipex_bonus(t_pipex_bonus *px);
+void	free_pipex_bonus(t_pipex_bonus *px);
 void    free_args(char **args);
 
 #endif

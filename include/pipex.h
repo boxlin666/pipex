@@ -20,10 +20,8 @@ typedef struct s_pipex
     pid_t pid2;
 } t_pipex;
 
-// 错误处理
 void    error_exit(const char *msg);
 
-// 执行流程
 void    exec_cmd(char *cmd_str, char **envp);
 void    run_pipex(t_pipex *context, char **envp);
 void    free_args(char **args);
