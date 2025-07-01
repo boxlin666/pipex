@@ -1,88 +1,93 @@
-#include "pipex.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   pipex.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: helin <helin@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/01 19:25:03 by helin             #+#    #+#             */
+/*   Updated: 2025/07/01 19:52:29 by helin            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "libft.h"
+#include "pipex.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
 #include <unistd.h>
 
-void run_pipex(char *infile, char *cmd1, char *cmd2, char *outfile, char **envp)
+static void	run_child1(int infile_fd, int pipe_write, char *cmd1, char **envp)
 {
-    int infile_fd, outfile_fd;
-    int pipefd[2];
-    char *error_message;
-    pid_t pid1, pid2;
-    int status1, status2;
+	if (infile_fd < 0)
+	{
+		ft_putstr_fd("pipex: ", 2);
+		perror(cmd1);
+		exit(1);
+	}
+	dup2(infile_fd, STDIN_FILENO);
+	dup2(pipe_write, STDOUT_FILENO);
+	close(infile_fd);
+	close(pipe_write);
+	exec_cmd(cmd1, envp);
+}
 
-    // 1. 打开 infile 和 outfile
-    infile_fd = open(infile, O_RDONLY);
-    outfile_fd = open(outfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (outfile_fd < 0)
-        ERROR_EXIT("open outfile");
+static void	run_child2(int outfile_fd, int pipe_read, char *cmd2, char **envp)
+{
+	if (outfile_fd < 0)
+	{
+		perror("pipex: outfile");
+		exit(1);
+	}
+	dup2(pipe_read, STDIN_FILENO);
+	dup2(outfile_fd, STDOUT_FILENO);
+	close(outfile_fd);
+	close(pipe_read);
+	exec_cmd(cmd2, envp);
+}
 
-    // 2. 创建管道
-    if (pipe(pipefd) == -1)
-        ERROR_EXIT("pipe");
+static void	close_and_exit(t_pipex *context, pid_t pid1, pid_t pid2)
+{
+	int	status;
 
-    // 3. 第一个子进程：执行 cmd1，将 infile -> cmd1 -> 管道
-    pid1 = fork();
-    if (pid1 < 0)
-        ERROR_EXIT("fork");
-    if (pid1 == 0)
-    {
-        if (infile_fd < 0)
-        {
-            error_message = ft_strjoin(cmd1, ": ");
-            error_message = ft_strjoin(error_message, infile);
-            ERROR_EXIT(error_message);
-        }
-        // 重定向 stdin/stdout
-        dup2(infile_fd, STDIN_FILENO);
-        dup2(pipefd[1], STDOUT_FILENO);
-        close(infile_fd);
-        close(outfile_fd);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        exec_cmd(cmd1, envp);
-    }
+	close(context->infile_fd);
+	close(context->outfile_fd);
+	close(context->pipefd[0]);
+	close(context->pipefd[1]);
+	waitpid(pid1, NULL, 0);
+	waitpid(pid2, &status, 0);
+	if (WIFEXITED(status))
+		exit(WEXITSTATUS(status));
+	exit(1);
+}
 
-    // 4. 第二个子进程：执行 cmd2，将 管道 -> cmd2 -> outfile
-    pid2 = fork();
-    if (pid2 < 0)
-        ERROR_EXIT("fork");
-    if (pid2 == 0)
-    {
-        if (infile_fd < 0)
-        {
-            close(pipefd[1]);
-            dup2(pipefd[0], STDIN_FILENO);
-            dup2(outfile_fd, STDOUT_FILENO);
-            close(outfile_fd);
-            close(pipefd[0]);
-        }
-        else
-        {
-            dup2(pipefd[0], STDIN_FILENO);
-            dup2(outfile_fd, STDOUT_FILENO);
-            close(infile_fd);
-            close(outfile_fd);
-            close(pipefd[0]);
-            close(pipefd[1]);
-        }
-
-        exec_cmd(cmd2, envp);
-    }
-
-    // 5. 父进程关闭所有 fd 并等待子进程结束
-    close(infile_fd);
-    close(outfile_fd);
-    close(pipefd[0]);
-    close(pipefd[1]);
-    waitpid(pid1, &status1, 0);
-    waitpid(pid2, &status2, 0);
-    if (WIFEXITED(status2))
-    {
-        exit(WEXITSTATUS(status2));
-    }
-    // 所有命令成功，返回 0
-    exit(0);
+void	run_pipex(t_pipex *context, char **envp)
+{
+	context->infile_fd = open(context->infile, O_RDONLY);
+	context->outfile_fd = open(context->outfile, O_CREAT | O_WRONLY | O_TRUNC,
+			0644);
+	if (pipe(context->pipefd) == -1)
+		error_exit("pipe");
+	context->pid1 = fork();
+	if (context->pid1 < 0)
+		error_exit("fork");
+	if (context->pid1 == 0)
+	{
+		close(context->pipefd[0]);
+		run_child1(context->infile_fd, context->pipefd[1], context->cmd1, envp);
+	}
+	context->pid2 = fork();
+	if (context->pid2 < 0)
+		error_exit("fork");
+	if (context->pid2 == 0)
+	{
+		close(context->pipefd[1]);
+		run_child2(context->outfile_fd, context->pipefd[0], context->cmd2,
+			envp);
+	}
+	close_and_exit(context, context->pid1, context->pid2);
 }
