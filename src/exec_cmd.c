@@ -6,13 +6,14 @@
 /*   By: helin <helin@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/01 19:24:39 by helin             #+#    #+#             */
-/*   Updated: 2025/07/01 19:50:12 by helin            ###   ########.fr       */
+/*   Updated: 2025/07/09 18:47:32 by helin            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 #include "pipex.h"
 #include <errno.h>
+#include <stdio.h>
 
 void	exec_cmd(char *cmd_str, char **envp)
 {
