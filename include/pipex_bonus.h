@@ -6,7 +6,7 @@
 /*   By: helin <helin@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/10 16:46:46 by helin             #+#    #+#             */
-/*   Updated: 2025/07/11 21:54:03 by helin            ###   ########.fr       */
+/*   Updated: 2025/07/20 15:11:39 by helin            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@ typedef struct s_pipex_bonus
 {
 	int		cmd_count;
 	char	**cmds;
-
 	int		**pipes;
 
 	char	*infile;
@@ -37,11 +36,12 @@ typedef struct s_pipex_bonus
 	pid_t	*pids;
 
 	char	**envp;
-	int		here_doc_pipe[2];
 }			t_pipex_bonus;
 
 void		error_exit(const char *msg);
-
+void		open_exit(t_pipex_bonus *px, const char *msg);
+void		open_infile(t_pipex_bonus *px);
+void		open_outfile(t_pipex_bonus *px);
 void		init_here_doc(t_pipex_bonus *px, int argc, char **argv,
 				char **envp);
 void		init_pipex(t_pipex_bonus *px, int argc, char **argv, char **envp);
@@ -49,9 +49,12 @@ void		exec_cmd(char *cmd_str, char **envp);
 void		error_exit(const char *msg);
 void		dup_and_redirect(t_pipex_bonus *px, int i);
 void		close_all_pipes(t_pipex_bonus *px);
-void		close_unused_pipes(t_pipex_bonus *px, int i);
 void		run_pipex_bonus(t_pipex_bonus *px);
 void		free_pipex_bonus(t_pipex_bonus *px);
 void		free_args(char **args);
+
+void		safe_close(int *fd);
+void		safe_dup2(int oldfd, int newfd);
+void		setup_pipes_and_pids(t_pipex_bonus *px);
 
 #endif

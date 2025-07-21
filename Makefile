@@ -1,21 +1,36 @@
-NAME       := pipex
-BONUS_NAME := pipex_bonus
+# **************************************************************************** #
+#                                Project Setup                                 #
+# **************************************************************************** #
 
-CC         := cc
-CFLAGS     := -Wall -Wextra -Werror -g
-INCLUDES   := -I include -I libft
+NAME        := pipex
+BONUS_NAME  := pipex_bonus
 
-SRC_DIR    := src
-BONUS_DIR  := bonus
+CC          := gcc
+CFLAGS      := -Wall -Wextra -Werror -g
+INCLUDES    := -I include -I libft
 
-SRCS       := $(addprefix $(SRC_DIR)/, main.c exec_cmd.c pipex.c error_exit.c)
-OBJS       := $(SRCS:.c=.o)
+SRC_DIR     := src
+BONUS_DIR   := bonus
 
-BONUS_SRCS := $(addprefix $(BONUS_DIR)/, main_bonus.c run_pipex_bonus.c exec_cmd_bonus.c init_pipex_bonus.c init_here_doc_bonus.c error_exit_bonus.c util_pipex_bonus.c)
-BONUS_OBJS := $(BONUS_SRCS:.c=.o)
+SRCS        := $(addprefix $(SRC_DIR)/, main.c exec_cmd.c pipex.c utils.c)
+BONUS_SRCS  := $(addprefix $(BONUS_DIR)/, main_bonus.c run_pipex_bonus.c exec_cmd_bonus.c init_pipex_bonus.c init_here_doc_bonus.c error_exit_bonus.c utils_bonus.c)
 
-LIBFT_DIR  := libft
-LIBFT      := $(LIBFT_DIR)/libft.a
+OBJS        := $(SRCS:.c=.o)
+BONUS_OBJS  := $(BONUS_SRCS:.c=.o)
+
+DEPS        := $(OBJS:.o=.d)
+BONUS_DEPS  := $(BONUS_OBJS:.o=.d)
+
+# **************************************************************************** #
+#                                Libft Setup                                   #
+# **************************************************************************** #
+
+LIBFT_DIR   := libft
+LIBFT       := $(LIBFT_DIR)/libft.a
+
+# **************************************************************************** #
+#                                    Rules                                     #
+# **************************************************************************** #
 
 .PHONY: all bonus clean fclean re
 
@@ -30,17 +45,24 @@ $(BONUS_NAME): $(BONUS_OBJS) $(LIBFT)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $(BONUS_OBJS) $(LIBFT)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
 
 $(LIBFT):
-	$(MAKE) -C $(LIBFT_DIR)
+	@$(MAKE) -C $(LIBFT_DIR)
+
+-include $(DEPS)
+-include $(BONUS_DEPS)
+
+# **************************************************************************** #
+#                                   Cleaning                                   #
+# **************************************************************************** #
 
 clean:
-	$(MAKE) -C $(LIBFT_DIR) clean
-	rm -f $(OBJS) $(BONUS_OBJS)
+	@$(MAKE) -C $(LIBFT_DIR) clean
+	rm -f $(OBJS) $(BONUS_OBJS) $(DEPS) $(BONUS_DEPS)
 
 fclean: clean
-	$(MAKE) -C $(LIBFT_DIR) fclean
+	@$(MAKE) -C $(LIBFT_DIR) fclean
 	rm -f $(NAME) $(BONUS_NAME)
 
 re: fclean all

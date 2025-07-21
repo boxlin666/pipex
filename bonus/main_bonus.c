@@ -6,7 +6,7 @@
 /*   By: helin <helin@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/01 21:05:25 by helin             #+#    #+#             */
-/*   Updated: 2025/07/09 19:46:13 by helin            ###   ########.fr       */
+/*   Updated: 2025/07/20 15:52:18 by helin            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,5 @@ or: ./pipex here_doc LIMITER cmd1 cmd2 ... outfile");
 	else
 		init_pipex(&px, argc, argv, envp);
 	run_pipex_bonus(&px);
-	free_pipex_bonus(&px);
 	return (0);
 }

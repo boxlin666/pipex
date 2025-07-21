@@ -6,7 +6,7 @@
 /*   By: helin <helin@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/11 21:39:53 by helin             #+#    #+#             */
-/*   Updated: 2025/07/11 21:50:54 by helin            ###   ########.fr       */
+/*   Updated: 2025/07/20 15:52:53 by helin            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,13 +15,24 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-static void	open_infile_if_needed(t_pipex_bonus *px)
+void	dup_and_redirect(t_pipex_bonus *px, int i)
 {
-	if (!px->here_doc)
+	if (i == 0)
 	{
-		px->infile_fd = open(px->infile, O_RDONLY);
-		if (px->infile_fd < 0)
-			error_exit("infile open");
+		safe_dup2(px->infile_fd, STDIN_FILENO);
+		safe_dup2(px->pipes[i][1], STDOUT_FILENO);
+		safe_close(&px->infile_fd);
+	}
+	else if (i == px->cmd_count - 1)
+	{
+		safe_dup2(px->pipes[i - 1][0], STDIN_FILENO);
+		safe_dup2(px->outfile_fd, STDOUT_FILENO);
+		safe_close(&px->outfile_fd);
+	}
+	else
+	{
+		safe_dup2(px->pipes[i - 1][0], STDIN_FILENO);
+		safe_dup2(px->pipes[i][1], STDOUT_FILENO);
 	}
 }
 
@@ -37,9 +48,12 @@ static void	fork_and_exec_all(t_pipex_bonus *px)
 			error_exit("fork");
 		if (px->pids[i] == 0)
 		{
+			if (i == 0)
+				open_infile(px);
+			else if (i == px->cmd_count - 1)
+				open_outfile(px);
 			dup_and_redirect(px, i);
-			close_unused_pipes(px, i);
-			close(px->outfile_fd);
+			close_all_pipes(px);
 			exec_cmd(px->cmds[i], px->envp);
 			exit(1);
 		}
@@ -69,11 +83,10 @@ void	run_pipex_bonus(t_pipex_bonus *px)
 {
 	int	last_status;
 
-	open_infile_if_needed(px);
 	fork_and_exec_all(px);
 	close_all_pipes(px);
-	close(px->outfile_fd);
 	last_status = wait_for_children(px);
+	free_pipex_bonus(px);
 	if (WIFEXITED(last_status))
 		exit(WEXITSTATUS(last_status));
 	else
